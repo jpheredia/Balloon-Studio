@@ -1,0 +1,28 @@
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const ts=require('typescript');
+require.extensions['.ts']=(module,file)=>module._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);
+const {newInk,comparisonDefaults,validComparison}=require('../lib/pdf-comparison.ts');
+const {tableDescription,tableCsv,nextTableCell,requireTableCells,parseHeaders}=require('../lib/tables.ts');
+const {makeXml,migrateProject,validateProject}=require('../lib/balloons.ts');
+const {emptyMetadata}=require('../lib/document-metadata.ts');
+const table={id:'table-test',name:'Coordenadas',columnLabel:'Coordenada',rows:['Punto A','Punto B','Punto C'],columns:['X','Y','Z']};
+const zone={id:'zone-test',type:'table',coordinate:null,tableCell:{tableId:table.id,row:0,column:0,value:'122,4'},number:'122',page:1,x:10,y:10,width:20,height:10,bx:5,by:5,pageWidth:100,pageHeight:100,rotation:0,pdfRect:[10,10,30,20],regions:[{kind:'rectangle',points:[{x:10,y:10},{x:30,y:10},{x:30,y:20},{x:10,y:20}]}],note:'',crop:'data:image/png;base64,AAAA'};
+const yZone={...zone,id:'zone-y',number:'123',tableCell:{...zone.tableCell,column:1,value:'-23,5'}};
+const project={id:'project-test',name:'plano.pdf',hash:'a'.repeat(64),version:8,tables:[table],comparison:{...comparisonDefaults,name:'revision.pdf'},metadata:emptyMetadata(),grids:{},hideQuickMenu:false,preferredType:'table',zones:[zone,yZone],nextNumbers:{1:'124'}};
+assert.equal(tableDescription(zone,[table]),'Punto A - Coordenada X: 122,4');
+assert.equal(tableDescription(yZone,[table]),'Punto A - Coordenada Y: -23,5');
+assert.match(tableCsv(project.zones,[table]),/"123";"Coordenadas";"Punto A";"Y";"-23,5"/);
+assert.equal(nextTableCell([table],project.zones).column,2);
+assert.throws(()=>requireTableCells([{...zone,tableCell:{...zone.tableCell,value:''}}],[table]),/122/);
+assert.throws(()=>parseHeaders('X\nX'));
+validateProject(project);const recovered=migrateProject(JSON.parse(JSON.stringify(project)));assert.deepEqual(recovered.tables,project.tables);assert.deepEqual(recovered.comparison,project.comparison);assert.equal(recovered.zones[1].tableCell.value,'-23,5');
+const old={...project,version:7,preferredType:'dimension',zones:[{...zone,type:'dimension',tableCell:undefined}]};delete old.tables;delete old.comparison;const upgraded=migrateProject(old);assert.equal(upgraded.version,8);assert.deepEqual(upgraded.tables,[]);assert.equal(upgraded.comparison,null);
+assert.match(makeXml(project),/<description>Punto A - Coordenada X: 122,4<\/description>/);assert.match(makeXml(project),/value="-23,5"/);
+assert.match(makeXml({...project,tables:[{...table,rows:['Punto A & B','Punto B','Punto C']}]}),/Punto A &amp; B/);
+const w=12,h=12,white=new Uint8ClampedArray(w*h*4).fill(255),base=white.slice(),rev=white.slice();
+const ink=(a,x,y)=>{const i=(y*w+x)*4;a[i]=a[i+1]=a[i+2]=0;};ink(base,2,2);ink(rev,2,2);ink(rev,8,8);
+let result=newInk(base,rev,w,h,45);assert.equal(result[(2*w+2)*4+3],0);assert.equal(result[(8*w+8)*4+3],255);assert.equal(result[(8*w+8)*4],220);
+assert.equal(newInk(base,base,w,h,45).some(v=>v!==0),false);assert.equal(newInk(base,white,w,h,45).some(v=>v!==0),false);
+assert.equal(validComparison({...comparisonDefaults,name:'revision'}),true);assert.equal(validComparison({...comparisonDefaults,name:'revision',scale:0}),false);
+console.log('Verificado: diferencias visuales, etiquetas y valores, CSV, XML, migración y recuperación del proyecto.');
+

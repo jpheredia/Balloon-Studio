@@ -46,13 +46,21 @@ const newFirst=classifySelection([ordinary[0],existing[1]],['zone-a','zone-b'],'
 assert.equal(newFirst[0].tableCell.column,0);assert.equal(newFirst[1].tableCell.column,2);
 assert.deepEqual(classifySelection(project.zones,['zone-a'],'dimension')[1],project.zones[1]);
 assert.throws(()=>requireTableCells([project.zones[0],{...project.zones[0],id:'duplicate',number:'104'}],project.tables),/ya están asignados/);
-assert.throws(()=>requireTableCells(classified,project.tables),/Completa/);
+assert.doesNotThrow(()=>requireTableCells(classified,project.tables));
+const pending={...project,zones:classified};
+const pendingXml=makeXml(pending);
+assert.match(pendingXml,/<coordinate axis="X" point="Punto A" value=""\/>/);
+assert.match(pendingXml,/<description>Punto A - Coordenada X<\/description>/);
+assert.match(tableCsv(classified,project.tables),/"Punto A";"X";"";"Punto A - Coordenada X"/);
+const pendingRoundTrip=migrateProject(JSON.parse(JSON.stringify(pending)));
+validateProject(pendingRoundTrip);assert.equal(pendingRoundTrip.zones[0].coordinate.value,'');
+assert.throws(()=>requireTableCells([{...classified[0],tableCell:null}],project.tables),/Completa el punto y eje/);
 const full=Array.from({length:9},(_,i)=>({type:'coordinate',tableCell:{tableId:table.id,row:Math.floor(i/3),column:i%3,value:'1'}}));
 assert.equal(nextTableCell([table],full),null);
 const legacy={...old,version:7,preferredType:'coordinate',zones:[{...zone,type:'coordinate',tableCell:undefined,coordinate:{axis:'Z',point:'Origen'},note:'Nota original'}]};delete legacy.tables;delete legacy.comparison;
 const migratedLegacy=migrateProject(legacy);validateProject(migratedLegacy);
 assert.equal(migratedLegacy.zones[0].coordinate.point,'Origen');assert.equal(migratedLegacy.zones[0].coordinate.axis,'Z');assert.equal(migratedLegacy.zones[0].note,'Nota original');assert.equal(migratedLegacy.zones[0].coordinate.value,'');
-assert.throws(()=>makeXml(migratedLegacy),/Completa/);
+assert.doesNotThrow(()=>makeXml(migratedLegacy));
 async function checkPdfSize(){
  const {PDFDocument,PDFRawStream,decodePDFRawStream}=require('pdf-lib');
  const {createAnnotatedPdf}=require('../lib/annotated-pdf.ts');

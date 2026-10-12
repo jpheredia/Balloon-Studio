@@ -13,7 +13,7 @@ assert.equal(tableDescription(zone,[table]),'Punto A - Coordenada X: 122,4');
 assert.equal(tableDescription(yZone,[table]),'Punto A - Coordenada Y: -23,5');
 assert.match(tableCsv(project.zones,[table]),/"123";"Coordenadas";"Punto A";"Y";"-23,5"/);
 assert.equal(nextTableCell([table],project.zones).column,2);
-assert.throws(()=>requireTableCells([{...zone,tableCell:{...zone.tableCell,value:''}}],[table]),/122/);
+assert.doesNotThrow(()=>requireTableCells([{...zone,tableCell:{...zone.tableCell,value:''}}],[table]));
 assert.throws(()=>parseHeaders('X\nX'));
 validateProject(project);const recovered=migrateProject(JSON.parse(JSON.stringify(project)));assert.deepEqual(recovered.tables,project.tables);assert.deepEqual(recovered.comparison,project.comparison);assert.equal(recovered.zones[1].tableCell.value,'-23,5');
 const old={...project,version:7,preferredType:'dimension',zones:[{...zone,type:'dimension',tableCell:undefined}]};delete old.tables;delete old.comparison;const upgraded=migrateProject(old);assert.equal(upgraded.version,9);assert.equal(upgraded.tables[0].name,'Coordenadas');assert.equal(upgraded.comparison,null);

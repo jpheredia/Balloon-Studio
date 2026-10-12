@@ -25,7 +25,7 @@ export function tableDescription(zone:{type:string;tableCell?:TableCell|null;not
 }
 export function requireTableCells(zones:any[],tables:InspectionTable[]) {
  const used=new Set<string>();
- for(const z of zones.filter(z=>['table','coordinate'].includes(z.type))) {const c=z.tableCell,t=tables.find(t=>t.id===c?.tableId);if(!validTableCell(c) || !t || !t.rows[c.row] || !t.columns[c.column] || !c.value.trim())throw new Error(`Completa el punto, eje y valor del balloon ${z.number} antes de exportar.`);const key=JSON.stringify([c.tableId,c.row,c.column]);if(used.has(key))throw new Error(`El punto y eje del balloon ${z.number} ya están asignados en ${t.name}.`);used.add(key);}
+ for(const z of zones.filter(z=>['table','coordinate'].includes(z.type))) {const c=z.tableCell,t=tables.find(t=>t.id===c?.tableId);if(!validTableCell(c) || !t || !t.rows[c.row] || !t.columns[c.column])throw new Error(`Completa el punto y eje del balloon ${z.number} antes de exportar.`);const key=JSON.stringify([c.tableId,c.row,c.column]);if(used.has(key))throw new Error(`El punto y eje del balloon ${z.number} ya están asignados en ${t.name}.`);used.add(key);}
 }
 export function nextTableCell(tables:InspectionTable[],zones:{type:string;tableCell?:TableCell|null}[]):TableCell|null {
  const last=zones.findLast(z=>['table','coordinate'].includes(z.type) && tables.some(t=>t.id===z.tableCell?.tableId));

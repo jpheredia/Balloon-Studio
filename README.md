@@ -14,12 +14,14 @@ La lista lateral ocupa el espacio inferior. Al seleccionar uno o varios
 balloons, muestra los tipos y la opción de borrarlos. El borrado múltiple
 requiere confirmación y se puede recuperar con Deshacer.
 
-**Coordenada** usa un grupo de puntos, un eje y un valor. El grupo inicial
-contiene Punto A/B/C y X/Y/Z. La etiqueta y las exportaciones mantienen valores
-como `Punto A - Coordenada X: 122,4`. El ZIP incluye `coordenadas.csv`, el XML,
-el PDF anotado y el proyecto de formato 9. Los proyectos anteriores de tipo
-Tabla se convierten a Coordenada al abrirlos. Las coordenadas antiguas que no
-tenían valor deben completarse antes de exportar.
+**Coordenada** permite marcar un punto y un eje; el grupo inicial contiene
+Punto A/B/C y X/Y/Z. El valor queda vacío para que el agente lo determine
+después a partir del recorte. No se pide en la interfaz ni se lee automáticamente
+del PDF, y no bloquea guardar o exportar. Los valores de proyectos anteriores
+se conservan en los datos y las exportaciones.
+
+El ZIP incluye `coordenadas.csv`, el XML, el PDF anotado y el proyecto de formato
+9. Los proyectos anteriores de tipo Tabla se convierten a Coordenada al abrirlos.
 
 ## Demo en Vercel
 

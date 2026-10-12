@@ -5,7 +5,8 @@ import {Button} from '@/components/ui/button';
 import {BALLOON_TYPES,type BalloonType} from '@/lib/balloon-types';
 import {Trash2} from 'lucide-react';
 
-export function SelectionActions({count,value,onChange,onDelete,disabled}:{count:number;value:BalloonType|null;onChange:(type:BalloonType)=>void;onDelete:()=>void;disabled:boolean}) {
+export function SelectionActions({count,value,onChange,onDelete,disabled,compact=false}:{count:number;value:BalloonType|null;onChange:(type:BalloonType)=>void;onDelete:()=>void;disabled:boolean;compact?:boolean}) {
+ if(compact)return <><label>Tipo de balloon<select aria-label="Tipo de los balloons seleccionados" value={value ?? ''} disabled={disabled} onChange={e=>onChange(e.target.value as BalloonType)}><option value="" disabled>Varios tipos</option>{Object.entries(BALLOON_TYPES).map(([type,label])=><option key={type} value={type}>{label}</option>)}</select></label><Button variant="outline" className="selection-delete" size="sm" disabled={disabled} onClick={onDelete}><Trash2 size={14}/>{count>1?'Borrar ('+count+')':'Borrar'}</Button></>;
  return <><span>{count>1?`${count} balloons seleccionados`:'Tipo de balloon'}</span><div>{Object.entries(BALLOON_TYPES).map(([type,label])=><Button key={type} size="sm" variant={value===type?'default':'ghost'} disabled={disabled} aria-pressed={value===type} onClick={()=>onChange(type as BalloonType)}>{label}</Button>)}</div><Button variant="outline" className="selection-delete" size="sm" disabled={disabled} onClick={onDelete}><Trash2 size={14}/>{count>1?'Borrar en masa ('+count+')':'Borrar balloon'}</Button></>;
 }
 

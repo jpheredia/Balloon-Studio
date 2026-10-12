@@ -176,12 +176,8 @@
 .zone-list .list-empty{flex:1;min-height:240px;justify-content:center;width:100%}
 .zone-list .zone-card{flex-shrink:0}
 .selection-editor{flex-shrink:0;margin-bottom:14px}
-.coordinate-selection-fields .table-fields{margin:0 0 10px}
 .table-fields .table-cell-axes input,.table-fields .table-cell-axes select{height:34px;min-width:0}
 .coordinate-groups summary{font-size:12px;cursor:pointer;color:#536d8f}
-.selection-order{display:flex;align-items:flex-end;gap:6px;padding:10px;margin-bottom:10px;background:#f3f7fd;border:1px solid #d4e0f0;border-radius:8px}
-.selection-order label{display:flex;flex:1;min-width:0;flex-direction:column;gap:6px;font-size:12px;color:#284264}
-.selection-order input{width:100%;height:34px;background:white}
 .drag-grip{touch-action:none;user-select:none}
 .quick-types.sidebar-selection{position:static;width:100%;max-width:none;box-shadow:none;border-radius:8px;z-index:auto}
 .quick-types .selection-delete{margin-top:10px;border-color:#e0bbb7;color:#a5362c;background:#fff8f7;width:100%}
@@ -189,5 +185,30 @@
 .selected-fields>label{display:block;margin:0 0 6px}
 .selected-fields>input{width:100%;font-size:14px;background:white}
 .selected-fields .table-fields{margin-top:0;margin-bottom:0}
+.selection-card-actions{display:flex;align-items:flex-end;gap:8px}
+.selection-card-actions label{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;font-size:12px}
+.selection-card-actions select{width:100%;height:34px;padding:4px 6px;background:white;border:1px solid #c5d2e4;border-radius:5px;font-size:13px}
+.selection-card-actions .selection-delete{color:#a5362c;border-color:#e0bbb7;height:34px;background:#fff8f7}
+.selection-drag-hint{display:block;margin-top:8px;font-size:12px;line-height:1.5;color:#536d8f}
+.zone-card .card-top{gap:7px;padding:8px 10px;border-bottom:1px solid #e6ebf3}
+.zone-card .card-top>[role=checkbox]{margin:0;flex:none}
+.zone-card .card-top .number-edit{width:64px;min-width:0;flex:none;height:30px}
+.zone-card .drag-grip{width:24px;height:30px;border:0;background:transparent;padding:0;cursor:grab}
+.zone-card .drag-grip:active{cursor:grabbing}
+.zone-card .drag-grip:focus-visible{outline:2px solid #175ee7;border-radius:4px}
+.card-type{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;font-size:12px;color:#536d8f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zone-card .card-top .delete-button{width:28px;height:30px;flex:none}
+.zone-card>.card-select{gap:10px;padding:10px;min-width:0}
+.zone-card>.card-select>span:first-child{min-width:0;flex:1}
+.zone-card>.card-select .crop-frame{flex:none;width:64px;height:48px}
+.zone-card>.card-select strong{white-space:normal;overflow-wrap:anywhere;line-height:1.4;font-size:13px}
+.card-edit-fields{padding:0 10px 10px;font-size:13px}
+.card-edit-fields>label{display:flex;flex-direction:column;gap:5px}
+.card-edit-fields>label input{width:100%;background:white;font-size:14px}
+.card-coordinate-fields.table-fields{background:transparent;border:0;border-radius:0;padding:0;margin:0}
+.card-coordinate-fields.table-fields label{min-width:0;margin:4px 0 10px;font-size:12px}
+.card-coordinate-fields .table-cell-axes{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.card-edit-fields .id-copy{font-size:11px;padding-top:10px}
+.card-drag-count{position:absolute;right:8px;top:44px;padding:3px 8px;border-radius:4px;background:#175ee7;color:white;font-size:12px;pointer-events:none}
 @media(max-width:760px){.inspector .zone-list{flex-basis:auto;min-height:300px;max-height:65dvh}.zone-list .list-empty{min-height:280px}}
 @media(max-width:760px){.comparison-controls{max-height:180px;padding:10px}.comparison-options{gap:8px}.comparison-options label{max-width:100%}.comparison-options input[type=number]{width:90px}.table-cell-axes{grid-template-columns:1fr}}

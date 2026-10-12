@@ -3,8 +3,8 @@ import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { coordinatePoint, parseHeaders, tableDescription, type InspectionTable, type TableCell } from '@/lib/tables';
 
-export default function TableFields({ tables, cell, number, disabled, onTables, onCell }: {
-  tables: InspectionTable[]; cell: TableCell | null; number?: string; disabled: boolean;
+export default function TableFields({ tables, cell, number, disabled, inline = false, onTables, onCell }: {
+  tables: InspectionTable[]; cell: TableCell | null; number?: string; disabled: boolean; inline?: boolean;
   onTables: (tables: InspectionTable[]) => void;
   onCell: (cell: TableCell, tables?: InspectionTable[]) => void;
 }) {
@@ -30,8 +30,8 @@ export default function TableFields({ tables, cell, number, disabled, onTables, 
       setEditing(null); setError('');
     } catch (e: any) { setError(e.message); }
   }
-  return <section className="table-fields" aria-label="Datos del balloon de coordenada">
-    <strong>{number ? 'Coordenada · balloon ' + number : 'Grupos de coordenadas'}</strong>
+  return <section className={'table-fields' + (inline ? ' card-coordinate-fields' : '')} aria-label={'Datos del balloon de coordenada' + (inline ? ' ' + number : '')}>
+    {!inline && <strong>{number ? 'Coordenada · balloon ' + number : 'Grupos de coordenadas'}</strong>}
     {number && <>
       {(!table || tables.length > 1) && <label>Grupo de puntos<select aria-label="Grupo de coordenadas" value={cell?.tableId ?? ''} disabled={disabled} onChange={e => onCell({ tableId: e.target.value, row: 0, column: 0, value: cell?.value ?? '' })}><option value="">Elige un grupo</option>{tables.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}
       {table && cell && <>
@@ -39,7 +39,7 @@ export default function TableFields({ tables, cell, number, disabled, onTables, 
           <label>Punto<input aria-label="Punto de la coordenada" list={pointList} key={number + '-' + table.rows[cell.row]} defaultValue={table.rows[cell.row]} maxLength={100} disabled={disabled} placeholder="Punto A, P1…" onBlur={e => changePoint(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}/><datalist id={pointList}>{table.rows.map(point => <option key={point} value={point}/>)}</datalist></label>
           <label>Coordenada<select aria-label="Eje de la coordenada" value={cell.column} disabled={disabled} onChange={e => onCell({ ...cell, column: Number(e.target.value) })}>{table.columns.map((axis, i) => <option key={i} value={i}>{axis}</option>)}</select></label>
         </div>
-        <p className="table-export-preview">{tableDescription({ type: 'coordinate', tableCell: cell }, tables)}</p>
+        {!inline && <p className="table-export-preview">{tableDescription({ type: 'coordinate', tableCell: cell }, tables)}</p>}
       </>}
     </>}
     {error && <p role="alert" className="metadata-error">{error}</p>}

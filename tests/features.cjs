@@ -16,7 +16,7 @@ assert.equal(nextTableCell([table],project.zones).column,2);
 assert.throws(()=>requireTableCells([{...zone,tableCell:{...zone.tableCell,value:''}}],[table]),/122/);
 assert.throws(()=>parseHeaders('X\nX'));
 validateProject(project);const recovered=migrateProject(JSON.parse(JSON.stringify(project)));assert.deepEqual(recovered.tables,project.tables);assert.deepEqual(recovered.comparison,project.comparison);assert.equal(recovered.zones[1].tableCell.value,'-23,5');
-const old={...project,version:7,preferredType:'dimension',zones:[{...zone,type:'dimension',tableCell:undefined}]};delete old.tables;delete old.comparison;const upgraded=migrateProject(old);assert.equal(upgraded.version,8);assert.deepEqual(upgraded.tables,[]);assert.equal(upgraded.comparison,null);
+const old={...project,version:7,preferredType:'dimension',zones:[{...zone,type:'dimension',tableCell:undefined}]};delete old.tables;delete old.comparison;const upgraded=migrateProject(old);assert.equal(upgraded.version,9);assert.equal(upgraded.tables[0].name,'Coordenadas');assert.equal(upgraded.comparison,null);
 assert.match(makeXml(project),/<description>Punto A - Coordenada X: 122,4<\/description>/);assert.match(makeXml(project),/value="-23,5"/);
 assert.match(makeXml({...project,tables:[{...table,rows:['Punto A & B','Punto B','Punto C']}]}),/Punto A &amp; B/);
 const w=12,h=12,white=new Uint8ClampedArray(w*h*4).fill(255),base=white.slice(),rev=white.slice();

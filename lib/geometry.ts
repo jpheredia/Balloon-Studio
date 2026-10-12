@@ -14,7 +14,7 @@ export function editRegion(region:Region,handle:ResizeHandle,dx:number,dy:number
 export function leaderAnchor(z: {x:number;y:number;width:number;height:number;bx:number;by:number}): Point {
  return { x:z.bx>=z.x+z.width/2?z.x+z.width:z.x, y:z.by>z.y+z.height/2?z.y+z.height:z.y };
 }
-export function balloonRadii(label:string|number) { return {rx:Math.max(14,String(label).length*3.7+6),ry:14}; }
+export function balloonRadii(label:string|number,fontSize=13) { const scale=fontSize/13;return {rx:Math.max(14,String(label).length*3.7+6)*scale,ry:14*scale}; }
 export function rectangle(a: Point, b: Point): Region {
  const x = Math.min(a.x,b.x), y = Math.min(a.y,b.y), right = Math.max(a.x,b.x), bottom = Math.max(a.y,b.y);
  return { kind:'rectangle', points:[{x,y},{x:right,y},{x:right,y:bottom},{x,y:bottom}] };

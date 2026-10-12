@@ -3,7 +3,7 @@ import { leaderAnchor, balloonRadii, regionsOf, type Region } from './geometry';
 type Annotation = { number:string;page:number;bx:number;by:number;x:number;y:number;width:number;height:number;regions:Region[] };
 type PdfView = { getPage(page:number):Promise<{getViewport(options:{scale:number}):{convertToPdfPoint(x:number,y:number):number[]}}> };
 /** Adds vector annotations to a copy, preserving the source PDF and its rotation/crop boxes. */
-export async function createAnnotatedPdf(source:Uint8Array, zones:Annotation[], pdf:PdfView):Promise<Uint8Array> {
+export async function createAnnotatedPdf(source:Uint8Array, zones:Annotation[], pdf:PdfView, fontSize=13):Promise<Uint8Array> {
  const doc=await PDFDocument.load(source.slice());
  const font=await doc.embedFont(StandardFonts.Helvetica),red=rgb(0.85,0.24,0.2);
  const pages=doc.getPages();
@@ -21,7 +21,7 @@ export async function createAnnotatedPdf(source:Uint8Array, zones:Annotation[], 
    const a=leaderAnchor(z);page.drawLine({start:{x:a.x,y:-a.y},end:{x:z.bx,y:-z.by},thickness:.8,color:red});
   }
   for(const z of local) {
-   const r=balloonRadii(z.number),fontSize=13;
+   const r=balloonRadii(z.number,fontSize);
    page.drawEllipse({x:z.bx,y:-z.by,xScale:r.rx,yScale:r.ry,borderWidth:1.5,borderColor:red,color:rgb(1,1,1)});
    page.drawText(z.number,{x:z.bx-font.widthOfTextAtSize(z.number,fontSize)/2,y:-z.by-fontSize*.35,size:fontSize,font,color:red});
   }

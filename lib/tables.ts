@@ -5,6 +5,14 @@ export function coordinateFromCell(cell:TableCell|null,tables:InspectionTable[],
  const table=tables.find(t=>t.id===cell?.tableId);
  return table && cell?{axis:table.columns[cell.column],point:table.rows[cell.row],value:cell.value}:fallback;
 }
+/** Assigns a point name to one balloon without renaming other points. */
+export function coordinatePoint(tables:InspectionTable[],cell:TableCell,point:string) {
+ const name=point.trim(),table=tables.find(t=>t.id===cell.tableId);
+ if(!table || !name || name.length>100)throw new Error('Indica un punto de entre 1 y 100 caracteres.');
+ let row=table.rows.indexOf(name);let next=tables;
+ if(row<0){if(table.rows.length>=200)throw new Error('Este grupo ya tiene 200 puntos.');row=table.rows.length;next=tables.map(t=>t.id===table.id?{...t,rows:[...t.rows,name]}:t);}
+ return {tables:next,cell:{...cell,row}};
+}
 export function parseHeaders(text:string) {
  const labels=text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
  if(!labels.length || labels.length>200 || labels.some(s=>s.length>100) || new Set(labels).size!==labels.length)throw new Error('Introduce entre 1 y 200 nombres distintos, uno por línea (máximo 100 caracteres).');

@@ -38,8 +38,32 @@ export function changeNumber<T extends {id:string;number:string|number;page?:num
  return zones.map(z=>z.id===id?{...z,number}:z);
 }
 export function moveOnPage<T extends {id:string;number:string|number;page:number}>(zones:T[],page:number,id:string,position:number):T[] {
- const pageZones=zones.filter(z=>z.page===page),ordered=moveItem(pageZones,id,position);let i=0;
- return zones.map(z=>z.page===page?ordered[i++]:z);
+ return moveSelectionOnPage(zones,page,[id],position);
+}
+/** Moves a selection as one block, keeping its relative order and page labels. */
+export function moveSelectionOnPage<T extends {id:string;number:string|number;page:number}>(zones:T[],page:number,ids:string[],position:number):T[] {
+ const local=zones.filter(z=>z.page===page),selected=new Set(ids),block=local.filter(z=>selected.has(z.id));
+ if(!block.length || !Number.isInteger(position) || position<1 || position>local.length)return zones;
+ const remaining=local.filter(z=>!selected.has(z.id)),ordered=[...remaining];
+ ordered.splice(Math.min(position-1,remaining.length),0,...block);
+ if(ordered.every((z,i)=>z.id===local[i].id))return zones;
+ let index=0;
+ return zones.map(z=>z.page===page?{...ordered[index],number:local[index++].number}:z);
+}
+export function dropSelectionOnPage<T extends {id:string;number:string|number;page:number}>(zones:T[],page:number,ids:string[],targetId:string,after:boolean):T[] {
+ const local=zones.filter(z=>z.page===page),selected=new Set(ids),target=local.findIndex(z=>z.id===targetId);
+ if(target<0 || selected.has(targetId))return zones;
+ const insertion=target+(after?1:0),removedBefore=local.slice(0,insertion).filter(z=>selected.has(z.id)).length;
+ return moveSelectionOnPage(zones,page,ids,insertion-removedBefore+1);
+}
+/** Reuses the page's original number slots, so other pages cannot collide. */
+export function removeAndRenumber<T extends {id:string;number:string|number;page:number}>(zones:T[],ids:string[],nextNumbers:Record<string,string>={}) {
+ const removed=new Set(ids),pages=new Set(zones.filter(z=>removed.has(z.id)).map(z=>z.page));
+ if(!pages.size)return {zones,nextNumbers};
+ const labels=new Map<number,(string|number)[]>(),offsets=new Map<number,number>(),next={...nextNumbers};
+ for(const page of pages){const local=zones.filter(z=>z.page===page);labels.set(page,local.map(z=>z.number));offsets.set(page,0);const count=local.filter(z=>!removed.has(z.id)).length;next[page]=normalizeNumber(local[count].number);}
+ const remaining=zones.filter(z=>!removed.has(z.id)).map(z=>{if(!pages.has(z.page))return z;const index=offsets.get(z.page)!;offsets.set(z.page,index+1);return {...z,number:labels.get(z.page)![index]};});
+ return {zones:remaining,nextNumbers:next};
 }
 export function renumberPageZones<T extends {id:string;number:string|number;page:number}>(zones:T[],page:number,start:string|number) {
  let number=normalizeNumber(start);

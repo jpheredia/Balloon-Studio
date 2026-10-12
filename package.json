@@ -11,7 +11,7 @@
     "build:static": "vite build --config vite.static.config.ts",
     "preview:static": "vite preview --config vite.static.config.ts",
     "check": "tsc --noEmit",
-    "test": "node tests/features.cjs && node tests/balloons-v9.cjs",
+    "test": "node tests/features.cjs && node tests/balloons-v9.cjs && node tests/ordering.cjs",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt"

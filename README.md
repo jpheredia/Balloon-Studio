@@ -13,7 +13,14 @@ su posición y se pueden mover manualmente.
 
 La lista lateral ocupa el espacio inferior. Al seleccionar uno o varios
 balloons, muestra los tipos y la opción de borrarlos. El borrado múltiple
-requiere confirmación y se puede recuperar con Deshacer.
+requiere confirmación y se puede recuperar con Deshacer. Al borrar se compactan
+los números de esa hoja; al mover, cada posición conserva su número y se
+mantienen los identificadores y recortes de los balloons.
+
+Puedes seleccionar varios con las casillas, Ctrl o Mayús y moverlos como un
+bloque por arrastre, flechas o la posición de la selección. Se conserva su orden
+relativo. El punto y el eje de un balloon de Coordenada se editan en la parte
+superior del panel derecho; el campo Punto permite escribir nuevos nombres.
 
 **Coordenada** permite marcar un punto y un eje; el grupo inicial contiene
 Punto A/B/C y X/Y/Z. El valor queda vacío para que el agente lo determine

@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:static": "vite build --config vite.static.config.ts",
+    "preview:static": "vite preview --config vite.static.config.ts",
     "check": "tsc --noEmit",
     "test": "node tests/features.cjs",
     "start": "wrangler dev --config dist/server/wrangler.json",

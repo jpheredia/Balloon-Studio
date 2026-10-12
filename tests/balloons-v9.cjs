@@ -31,7 +31,10 @@ assert.match(makeXml(configured),/<balloonSettings fontSize="26" position="cente
 for(const invalid of [0,5,49,NaN,Infinity])assert.equal(validBalloonSettings({fontSize:invalid,position:'center'}),false);
 assert.throws(()=>validateProject({...configured,balloonSettings:{fontSize:26,position:'unknown'}}));
 const rect={x:100,y:100,width:200,height:100},page={pageWidth:600,pageHeight:400};
-for(const [position,bx,by] of [['top-left',100,100],['top-right',300,100],['center',200,150],['bottom-left',100,200],['bottom-right',300,200]])assert.deepEqual(defaultBalloonPosition(rect,page,'101',{fontSize:13,position}),{bx,by});
+for(const [position,bx,by] of [['top-left',74.9,78],['top-right',325.1,78],['center',200,150],['bottom-left',74.9,222],['bottom-right',325.1,222]]){const placed=defaultBalloonPosition(rect,page,'101',{fontSize:13,position});assert.ok(Math.abs(placed.bx-bx)<1e-8);assert.ok(Math.abs(placed.by-by)<1e-8);}
+const largeCorner=defaultBalloonPosition(rect,page,'101',{fontSize:26,position:'top-left'});
+assert.ok(largeCorner.bx+balloonRadii('101',26).rx<rect.x);
+assert.ok(largeCorner.by+balloonRadii('101',26).ry<rect.y);
 const boundary=defaultBalloonPosition({x:0,y:0,width:10,height:10},page,'101',{fontSize:26,position:'top-left'});
 assert.equal(boundary.by,28);assert.ok(boundary.bx>28);
 assert.equal(balloonRadii('101',26).rx,balloonRadii('101',13).rx*2);

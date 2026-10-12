@@ -6,7 +6,8 @@ no requiere base de datos ni variables de entorno para funcionar.
 ## Balloons y coordenadas
 
 El botón **Balloons**, junto a GRID, configura el tamaño de letra de todo el
-proyecto y la esquina o el centro donde aparecerán los nuevos balloons. El
+proyecto y la esquina o el centro donde aparecerán los nuevos balloons. En las
+esquinas se colocan por fuera del recorte con espacio para ver la línea de unión. El
 tamaño se usa también al exportar el PDF; los balloons existentes conservan
 su posición y se pueden mover manualmente.
 

@@ -22,6 +22,7 @@ export default function BalloonConfiguration({ value, disabled, onApply }: {
       <fieldset className="balloon-position-field"><legend>Posición de los nuevos balloons</legend>
         <div className="balloon-position-picker" role="radiogroup" aria-label="Posición predeterminada">
           <div className="position-rectangle" aria-hidden="true"/>
+          <svg className="position-leaders" viewBox="0 0 210 130" aria-hidden="true"><line x1="16" y1="16" x2="32" y2="32"/><line x1="194" y1="16" x2="178" y2="32"/><line x1="16" y1="114" x2="32" y2="98"/><line x1="194" y1="114" x2="178" y2="98"/></svg>
           {Object.entries(BALLOON_POSITIONS).map(([position, label]) => <button type="button" key={position} className={'position-choice position-' + position} role="radio" aria-checked={draft.position === position} aria-label={label} title={label} onClick={() => setDraft(d => ({ ...d, position: position as BalloonSettings['position'] }))}><span/></button>)}
         </div>
         <p>{BALLOON_POSITIONS[draft.position]}</p>

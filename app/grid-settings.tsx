@@ -5,7 +5,7 @@ import {Checkbox} from '@/components/ui/checkbox';
 import {Select,SelectTrigger,SelectValue,SelectContent,SelectItem} from '@/components/ui/select';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from '@/components/ui/dialog';
 import {defaultGrid,axisLabels,validateGrid,type PageGrid,type GridAxis} from '@/lib/grid';
-function Choice({label,value,options,onChange}:{label:string;value:string;options:[string,string][];onChange:(s:string)=>void}){return <label>{label}<Select value={value} onValueChange={v=>{if(v)onChange(v);}}><SelectTrigger aria-label={label}><SelectValue/></SelectTrigger><SelectContent>{options.map(([v,l])=><SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent></Select></label>;}
+function Choice({label,value,options,onChange}:{label:string;value:string;options:[string,string][];onChange:(s:string)=>void}){return <label>{label}<Select value={value} onValueChange={v=>{if(v)onChange(v);}}><SelectTrigger aria-label={label}><SelectValue>{options.find(([option])=>option===value)?.[1] ?? value}</SelectValue></SelectTrigger><SelectContent>{options.map(([v,l])=><SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent></Select></label>;}
 export default function GridSettings({value,page,pages,disabled,onApply}:{value?:PageGrid;page:number;pages:number;disabled:boolean;onApply:(grid:PageGrid,pages:number[])=>void}){
  const [open,setOpen]=useState(false),[draft,setDraft]=useState(defaultGrid),[error,setError]=useState(''),[scope,setScope]=useState('current'),[targets,setTargets]=useState<number[]>([]);
  function axis(key:'horizontal'|'vertical',patch:Partial<GridAxis>){setDraft(d=>({...d,[key]:{...d[key],...patch}}));}

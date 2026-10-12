@@ -22,9 +22,13 @@ export function defaultBalloonPosition(
   settings: BalloonSettings,
 ) {
   const { position } = settings;
-  const x = rect.x + (position === 'center' ? rect.width / 2 : position.endsWith('right') ? rect.width : 0);
-  const y = rect.y + (position === 'center' ? rect.height / 2 : position.startsWith('bottom') ? rect.height : 0);
   const r = balloonRadii(label, settings.fontSize);
+  // Leave the balloon outside the selected corner, with a visible leader.
+  const gap = 8;
+  const x = position === 'center' ? rect.x + rect.width / 2
+    : position.endsWith('right') ? rect.x + rect.width + r.rx + gap : rect.x - r.rx - gap;
+  const y = position === 'center' ? rect.y + rect.height / 2
+    : position.startsWith('bottom') ? rect.y + rect.height + r.ry + gap : rect.y - r.ry - gap;
   const marginX = Math.min(r.rx, page.pageWidth / 2), marginY = Math.min(r.ry, page.pageHeight / 2);
   return {
     bx: Math.max(marginX, Math.min(page.pageWidth - marginX, x)),

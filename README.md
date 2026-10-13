@@ -63,4 +63,18 @@ Para probarla, abre un PDF, añade una zona y exporta el resultado.
 
 `npm run dev` y `npm run build` conservan el flujo Vinext/Sites existente.
 
+## Interpretación con agente y auditoría
+
+La pestaña **Auditoría / paso final** conecta con Balloon Expert mediante un
+servicio local y la sesión de ChatGPT de Codex, sin claves de API. Ejecuta
+`npm run agent:bridge`, pega el código que muestra la terminal y confirma las
+unidades/tolerancias antes de interpretar.
+
+El resultado conserva los recortes y los IDs originales. Puedes contrastar cada
+interpretación, guardar correcciones y exportar un ZIP que se vuelve a abrir en
+la app. Las decisiones humanas se guardan separadas de la respuesta del agente.
+
+La instalación, el contrato del ZIP y la configuración de Vercel están en
+[docs/agent-audit.md](docs/agent-audit.md).
+
 

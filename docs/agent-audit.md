@@ -1,6 +1,6 @@
 # Balloon Expert: interpretación local y auditoría
 
-Esta rama conserva el editor y añade **Auditoría / paso final**. La web sigue siendo
+Esta rama conserva el editor y añade **IA Balloon Expert**. La web sigue siendo
 estática en Vercel. Un servicio en el ordenador del usuario ejecuta Codex CLI con
 su sesión de ChatGPT; no hay claves de OpenAI, cookies de ChatGPT ni credenciales
 de Codex en Vercel o en el repositorio. Esta ejecución consume la cuota de Codex
@@ -19,12 +19,20 @@ incluida en la cuenta, no es uso ilimitado.
    el servicio. La terminal muestra un
    código nuevo de conexión. Mantén el servicio abierto mientras interpretas.
 5. Abre el despliegue de esta rama, carga un PDF/proyecto y crea los balloons.
-6. En **Auditoría / paso final**, pega el código y pulsa **Conectar**. Si el navegador
+6. En **IA Balloon Expert**, pega el código y pulsa **Conectar**. Si el navegador
    solicita acceso a la red local, autorízalo para este despliegue.
 7. Confirma unidades y tolerancia general. Pulsa **Interpretar con agente**.
 8. Al terminar, compara cada resultado con su evidencia. Acepta las interpretaciones
    correctas o guarda correcciones. Resuelve las incidencias antes de guardar la
    auditoría final. **Guardar proyecto** permite conservar también una revisión parcial.
+
+Los contadores funcionan como filtros: todos, pendientes, incidencias y corregidos.
+Las filas pendientes o con incidencias se resaltan en rojo suave, también al pasar
+el cursor. Al recibir el resultado y guardar correcciones, la transcripción visual
+se copia a la descripción de cada balloon del plano (las coordenadas conservan sus
+campos de tabla). El ZIP y su XML conservan esta descripción. Las notas enviadas
+originalmente se guardan en `project.audit.sourceNotes` para que la copia automática
+no invalide la auditoría; un cambio independiente en la tarjeta sí la invalida.
 
 El servicio escucha únicamente en `127.0.0.1:4318`. La autenticación usa un código
 aleatorio por arranque; el navegador lo conserva solo en su sesión. Se rechazan

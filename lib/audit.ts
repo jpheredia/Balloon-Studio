@@ -17,7 +17,7 @@ export type AgentResponse = {
   readingMethod: 'direct-vision'; characteristics: Interpretation[];
 };
 export type AuditReview = { decision: 'accepted' | 'corrected'; reviewedAt: string; note: string; corrected: Interpretation | null };
-export type AuditState = { version: 1; request: AuditRequest; response: AgentResponse; importedAt: string; reviews: Record<string, AuditReview> };
+export type AuditState = { version: 1; request: AuditRequest; response: AgentResponse; importedAt: string; reviews: Record<string, AuditReview>; sourceNotes?: Record<string, string> };
 const ID = /^[a-zA-Z0-9-]{1,80}$/;
 const SHA = /^[a-f0-9]{64}$/;
 const validId = (v: unknown) => typeof v === 'string' && ID.test(v);
@@ -38,7 +38,10 @@ export function sourceSnapshot(project: any) {
     id: project.id, name: project.name, hash: project.hash, metadata: project.metadata,
     tables: project.tables, grids: project.grids,
     zones: project.zones.map((z: any) => ({
-      id: z.id, number: z.number, page: z.page, type: z.type, note: z.note,
+      id: z.id, number: z.number, page: z.page, type: z.type,
+      // A copied transcription is review output; retain the note actually sent to the agent.
+      // Any subsequent manual change remains evidence and invalidates the old result.
+      note: project.audit?.sourceNotes?.[z.id] !== undefined && z.note === auditFields(project.audit, z.id)?.transcription ? project.audit.sourceNotes[z.id] : z.note,
       coordinate: z.coordinate, tableCell: z.tableCell, regions: z.regions,
       pageWidth: z.pageWidth, pageHeight: z.pageHeight, rotation: z.rotation, crop: z.crop,
     })),
@@ -94,6 +97,7 @@ export function validateAuditState(v: any): asserts v is AuditState {
   if (!v || v.version !== 1 || !date(v.importedAt) || !v.reviews || typeof v.reviews !== 'object' || Array.isArray(v.reviews)) throw new Error('Auditoría guardada no válida.');
   validateAgentResponse(v.response, v.request);
   const ids = new Set(v.request.balloons.map((b: any) => b.id));
+  if (v.sourceNotes !== undefined && (!v.sourceNotes || typeof v.sourceNotes !== 'object' || Array.isArray(v.sourceNotes) || Object.entries(v.sourceNotes).some(([id, note]) => !ids.has(id) || !string(note)))) throw new Error('Notas originales de auditoría no válidas.');
   for (const [id, value] of Object.entries(v.reviews)) {
     const r = value as any;
     if (!ids.has(id) || !r || !['accepted','corrected'].includes(r.decision) || !date(r.reviewedAt) || !string(r.note) || (r.decision === 'accepted' ? r.corrected !== null : !r.corrected)) throw new Error('Decisión de auditoría no válida.');
@@ -102,6 +106,21 @@ export function validateAuditState(v: any): asserts v is AuditState {
 }
 export function auditFields(audit: AuditState, id: string): Interpretation | undefined {
   return audit.reviews[id]?.corrected ?? audit.response.characteristics.find(v => v.balloonId === id);
+}
+/** Copy committed transcriptions into drawing cards without changing the original evidence. */
+export function applyAuditTranscriptions<T extends { zones: { id: string; type: string; note: string }[]; audit?: AuditState }>(project: T, audit: AuditState): T {
+  validateAuditState(audit);
+  const sameJob = project.audit?.request.jobId === audit.request.jobId;
+  const sourceNotes = { ...(sameJob ? project.audit?.sourceNotes : undefined), ...audit.sourceNotes };
+  const zones = project.zones.map(z => {
+    const fields = auditFields(audit, z.id);
+    if (z.type === 'coordinate' || !fields) return z;
+    // Preserve an independent edit in the drawing card, including when reopening a ZIP.
+    if (sameJob && project.audit?.sourceNotes?.[z.id] !== undefined && z.note !== auditFields(project.audit, z.id)?.transcription) return z;
+    sourceNotes[z.id] ??= z.note;
+    return { ...z, note: fields.transcription };
+  });
+  return { ...project, zones, audit: { ...audit, sourceNotes } };
 }
 export function auditCounts(audit: AuditState) {
   const rows = audit.response.characteristics;
@@ -114,7 +133,8 @@ export function recordReview(audit: AuditState, id: string, corrected: Interpret
 }
 export async function assertAuditMatches(audit: AuditState, project: any) {
   validateAuditState(audit);
-  if (audit.request.projectId !== project.id || audit.request.documentSha256 !== project.hash || audit.request.sourceDigest !== await sourceDigest(project)) throw new Error('La auditoría pertenece a otra versión del plano o sus recortes. Vuelve a ejecutar el agente sobre el proyecto actual.');
+  const contextAudit = project.audit?.request.jobId === audit.request.jobId ? project.audit : audit;
+  if (audit.request.projectId !== project.id || audit.request.documentSha256 !== project.hash || audit.request.sourceDigest !== await sourceDigest({ ...project, audit: contextAudit })) throw new Error('La auditoría pertenece a otra versión del plano o sus recortes. Vuelve a ejecutar el agente sobre el proyecto actual.');
 }
 export async function assertFinalAudit(audit: AuditState, project: any) {
   await assertAuditMatches(audit, project);

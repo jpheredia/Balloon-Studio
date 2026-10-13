@@ -65,7 +65,7 @@ Para probarla, abre un PDF, añade una zona y exporta el resultado.
 
 ## Interpretación con agente y auditoría
 
-La pestaña **Auditoría / paso final** conecta con Balloon Expert mediante un
+La pestaña **IA Balloon Expert** conecta con Balloon Expert mediante un
 servicio local y la sesión de ChatGPT de Codex, sin claves de API. Ejecuta
 `npm run agent:bridge`, pega el código que muestra la terminal y confirma las
 unidades/tolerancias antes de interpretar.

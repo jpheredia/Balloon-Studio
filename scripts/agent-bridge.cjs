@@ -11,6 +11,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
 const {validateAuditRequest, validateAgentResponse, createAuditState, agentResultSchema, sourceDigest, sha256, cropBytes, auditCsv} = require('../lib/audit.ts');
 const {validateProject, makeXml} = require('../lib/balloons.ts');
 const promptFor = require('./agent-prompt.cjs');
+const {createProgress,activity,advance,eventObserver,jsonLineReader}=require('./agent-progress.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const MAX_UPLOAD = 150 * 1024 * 1024;
 const UUID = /^[a-zA-Z0-9-]{1,80}$/;
@@ -126,8 +127,9 @@ async function startBridge(options={}) {
   await fs.access(path.join(agentDir,'interpret-balloons.zip'));
   await fs.mkdir(jobsRoot,{recursive:true});
   const jobs=new Map(); let active=null;
-  const publicJob=j=>({id:j.id,status:j.status,message:j.message,createdAt:j.createdAt,updatedAt:j.updatedAt});
-  const persist=async j=>{j.updatedAt=new Date().toISOString();await fs.writeFile(path.join(j.dir,'bridge-state.json'),JSON.stringify(publicJob(j)));};
+  const publicJob=j=>({id:j.id,status:j.status,message:j.message,createdAt:j.createdAt,updatedAt:j.updatedAt,progress:j.progress});
+  const saves=new WeakMap();
+  const persist=j=>{j.updatedAt=new Date().toISOString();const snapshot=JSON.stringify(publicJob(j));const next=(saves.get(j)??Promise.resolve()).catch(()=>{}).then(()=>fs.writeFile(path.join(j.dir,'bridge-state.json'),snapshot));saves.set(j,next);return next;};
   async function loadJob(id) {
     if(jobs.has(id))return jobs.get(id);
     if(!UUID.test(id))return null;
@@ -135,34 +137,43 @@ async function startBridge(options={}) {
       const dir=safePath(jobsRoot,id),saved=JSON.parse(await fs.readFile(path.join(dir,'bridge-state.json'),'utf8'));
       if(saved.id!==id)return null;
       const job={...saved,dir,child:null};
-      if(['running','preparing'].includes(job.status)){job.status='failed';job.message='El servicio se cerró durante el trabajo. Ejecuta una nueva solicitud.';await persist(job);}
+      if(['running','preparing'].includes(job.status)){job.status='failed';job.message='El servicio se cerró durante el trabajo. Ejecuta una nueva solicitud.';if(job.progress)activity(job.progress,job.message,'warning');await persist(job);}
       jobs.set(id,job);return job;
     }catch{return null;}
   }
   async function run(job) {
-    let timer;
+    let timer,activitySave;
     try {
-      job.status='running';job.message='Interpretando los recortes con la skill y las referencias.';await persist(job);
+      job.status='running';job.message='Interpretando los recortes con la skill y las referencias.';advance(job.progress,'connecting','Iniciando Codex con la sesión de ChatGPT.');await persist(job);
       if(job.status==='cancelled')return;
       const output=path.join(job.dir,'agent-result.json');
       const args=['exec','--sandbox','workspace-write','--skip-git-repo-check','--ephemeral','--json','--output-schema',path.join(job.dir,'result.schema.json'),'--output-last-message',output,'-'];
       const child=spawn(codex,args,{cwd:job.dir,env:cleanEnvironment(),windowsHide:true,stdio:['pipe','pipe','pipe']});job.child=child;
       const log=plainFs.createWriteStream(path.join(job.dir,'codex-events.log'),{flags:'a'});
       child.stdout.pipe(log,{end:false});child.stderr.pipe(log,{end:false});
+      const observe=eventObserver(job.progress);
+      const events=jsonLineReader(event=>{if(job.status==='running'&&observe(event)&&!activitySave)activitySave=setTimeout(()=>{activitySave=null;if(job.status==='running')void persist(job).catch(()=>{});},1000);});
+      child.stdout.on('data',chunk=>events.write(chunk));
       timer=setTimeout(()=>{job.timedOut=true;child.kill();},60*60*1000);
       const exited=new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',code=>resolve(code));});
       child.stdin.on('error',()=>{});child.stdin.end(promptFor(job.request));
-      let code;try{code=await exited;}finally{log.end();}
+      let code;try{code=await exited;}finally{events.end();log.end();clearTimeout(activitySave);}
       if(job.status==='cancelled')return;
       if(job.timedOut)throw new Error('El trabajo excedió una hora. Reduce el lote de balloons.');
       if(code!==0)throw new Error('Codex terminó con un error. Consulta codex-events.log en la carpeta del trabajo.');
+      advance(job.progress,'validating','Comprobando el resultado, los identificadores y la cobertura de balloons.');await persist(job);
+      if(job.status==='cancelled')return;
       const resultText=await fs.readFile(output,'utf8');
       if(resultText.length>32*1024*1024)throw new Error('La respuesta del agente es demasiado grande.');
       const response=JSON.parse(resultText);
+      validateAgentResponse(response,job.request);
+      advance(job.progress,'packaging','Resultado validado. Preparando el ZIP editable.');await persist(job);
+      if(job.status==='cancelled')return;
       await fs.writeFile(path.join(job.dir,'result.zip'),await assembleResultZip(job, response));
-      job.status='completed';job.message='Interpretación terminada. Resultado validado y pendiente de auditoría humana.';await persist(job);
-    }catch(error){if(job.status!=='cancelled'){job.status='failed';job.message=error.message;await persist(job);}}
-    finally{clearTimeout(timer);job.child=null;delete job.project;delete job.original;delete job.revision;delete job.crops;delete job.request;if(active===job.id)active=null;}
+      if(job.status==='cancelled')return;
+      job.status='completed';job.message='Interpretación terminada. Resultado validado y pendiente de auditoría humana.';advance(job.progress,'completed','ZIP listo para revisar en la app.');await persist(job);
+    }catch(error){if(job.status!=='cancelled'){job.status='failed';job.message=error.message;activity(job.progress,'El trabajo se ha detenido. Consulta el mensaje de error.','warning');await persist(job);}}
+    finally{clearTimeout(timer);clearTimeout(activitySave);job.child=null;delete job.project;delete job.original;delete job.revision;delete job.crops;delete job.request;if(active===job.id)active=null;}
   }
   const server=http.createServer(async(req,res)=>{
     const origin=req.headers.origin;
@@ -189,14 +200,15 @@ async function startBridge(options={}) {
     const supplied=Buffer.from(req.headers.authorization?.replace(/^Bearer /,'')??''), expected=Buffer.from(token);
     if(supplied.length!==expected.length || !timingSafeEqual(supplied,expected)){json(res,401,{error:'Código de conexión no válido.'});return;}
     try {
-      if(req.method==='GET' && pathname==='/health'){json(res,200,{version:1,auth:'chatgpt',activeJob:active});return;}
+      if(req.method==='GET' && pathname==='/health'){json(res,200,{version:1,auth:'chatgpt',activeJob:active,features:['job-progress']});return;}
       if(req.method==='POST' && pathname==='/jobs') {
         if(active){json(res,409,{error:'Hay un trabajo en ejecución. Espera o cancélalo.'});return;}
         if(!req.headers['content-type']?.startsWith('application/zip')){json(res,415,{error:'Envía un ZIP de solicitud.'});return;}
         active='preparing';
         let prepared;
         try{prepared=await prepareJob(await body(req),jobsRoot,agentDir);}catch(error){active=null;throw error;}
-        const job={...prepared,id:prepared.request.jobId,status:'preparing',message:'Preparando interpretación.',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),child:null};
+        const job={...prepared,id:prepared.request.jobId,status:'preparing',message:'Preparando interpretación.',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),progress:createProgress(),child:null};
+        activity(job.progress,`Paquete verificado: ${job.request.balloons.length} balloons listos para interpretar.`);
         jobs.set(job.id,job);active=job.id;await persist(job);json(res,202,publicJob(job));void run(job);return;
       }
       const route=pathname.match(/^\/jobs\/([a-zA-Z0-9-]{1,80})(?:\/(result|cancel))?$/);
@@ -205,7 +217,7 @@ async function startBridge(options={}) {
         if(req.method==='GET' && !route[2]){json(res,200,publicJob(job));return;}
         if(req.method==='POST' && route[2]==='cancel'){
           if(!['preparing','running'].includes(job.status)){json(res,409,{error:'El trabajo ya ha terminado.'});return;}
-          job.status='cancelled';job.message='Trabajo cancelado.';job.child?.kill();await persist(job);json(res,200,publicJob(job));return;
+          job.status='cancelled';job.message='Trabajo cancelado.';if(job.progress)activity(job.progress,'Trabajo cancelado por el usuario.','warning');job.child?.kill();await persist(job);json(res,200,publicJob(job));return;
         }
         if(req.method==='GET' && route[2]==='result'){
           if(job.status!=='completed'){json(res,409,{error:'El trabajo todavía no tiene resultado.'});return;}

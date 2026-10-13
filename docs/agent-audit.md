@@ -57,6 +57,20 @@ Los trabajos, copias de conocimiento, eventos de Codex y ZIP se conservan en
 se pueden recuperar por ID; un trabajo interrumpido se marca como fallido y no se
 reanuda ni consume cuota automáticamente. Hay como máximo un intérprete activo.
 
+En la configuración, **Actividad del agente** muestra las fases de ejecución,
+el tiempo transcurrido, las acciones de herramientas completadas y las últimas
+acciones recibidas de Codex, actualizadas cada cuatro segundos. Los fallos de una
+herramienta se muestran como avisos de posible reintento; el estado final depende
+del trabajo completo. No muestra un porcentaje estimado, razonamiento privado,
+comandos ni el contenido de sus salidas. Las fases de validación y empaquetado
+proceden del servicio, y el registro completo permanece en `codex-events.log`.
+Las últimas doce acciones se guardan junto al estado del trabajo.
+
+Después de actualizar el servicio, espera a que termine cualquier trabajo activo,
+pulsa **Ctrl + C** en su terminal y ejecuta otra vez `npm run agent:bridge`. Pega
+el nuevo código en la app. Las versiones anteriores siguen funcionando, pero la
+app pide reiniciarlas para disponer de actividad detallada.
+
 ## Contrato de intercambio
 
 El paquete de solicitud contiene `request.json`, `project.json`, `inspection.xml`,

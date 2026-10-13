@@ -4,9 +4,10 @@ import {Button} from '@/components/ui/button';
 import {Play,Plug,Download,Upload,Check,ExternalLink,Square,AlertTriangle} from 'lucide-react';
 import {AUDIT_CLASSIFICATIONS,auditFields,auditCounts,recordReview,assertAuditMatches,validateInterpretation,type AuditState,type Interpretation,type JobSettings} from '@/lib/audit';
 import {readAgentPackage} from '@/lib/agent-package';
+import AgentProgress,{type AgentJob} from './agent-progress';
 
 const BRIDGE='http://127.0.0.1:4318';
-type Job={id:string;status:'preparing'|'running'|'completed'|'failed'|'cancelled';message:string};
+type Job=AgentJob;
 type Props={project:any;disabled:boolean;getPackage:(settings:JobSettings)=>Promise<{bytes:Uint8Array}>;onAudit:(audit:AuditState)=>void;onLocate:(id:string)=>void;onExport:()=>void};
 function download(bytes:Uint8Array,name:string){const url=URL.createObjectURL(new Blob([bytes as Uint8Array<ArrayBuffer>],{type:'application/zip'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
 async function bridgeFetch(route:string,token:string,options:RequestInit={}){
@@ -20,6 +21,7 @@ function filteredRows(audit:AuditState,filter:AuditFilter){return audit.response
 
 export default function AuditPanel({project,disabled,getPackage,onAudit,onLocate,onExport}:Props){
  const [token,setToken]=useState(''),[connected,setConnected]=useState(false),[connecting,setConnecting]=useState(false);
+ const [progressSupported,setProgressSupported]=useState<boolean|null>(null);
  const [unit,setUnit]=useState(''),[toleranceMode,setToleranceMode]=useState(''),[tolerance,setTolerance]=useState('');
  const [job,setJob]=useState<Job|null>(null),[working,setWorking]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [selected,setSelected]=useState(''),[filter,setFilter]=useState<AuditFilter>('all'),[draft,setDraft]=useState<Interpretation|null>(null),[draftDirty,setDraftDirty]=useState(false),[reviewNote,setReviewNote]=useState('');
@@ -43,7 +45,7 @@ export default function AuditPanel({project,disabled,getPackage,onAudit,onLocate
   async function poll(){
    try{
     const status:Job=await (await bridgeFetch('/jobs/'+job!.id,token,{signal:lifecycle.signal})).json();
-    if(lifecycle.signal.aborted)return;setJob(old=>old?.status===status.status && old.message===status.message?old:status);
+    if(lifecycle.signal.aborted)return;setJob(old=>JSON.stringify(old)===JSON.stringify(status)?old:status);
     if(status.status==='completed'){
      const bytes=new Uint8Array(await (await bridgeFetch('/jobs/'+status.id+'/result',token,{signal:lifecycle.signal})).arrayBuffer());
      if(lifecycle.signal.aborted)return;result.current=bytes;appliedJob.current=status.id;
@@ -55,7 +57,7 @@ export default function AuditPanel({project,disabled,getPackage,onAudit,onLocate
   }
   void poll();return()=>{lifecycle.abort();clearTimeout(timer);};
  },[connected,job?.id,job?.status,token]);
- async function connect(){setConnecting(true);setError('');try{const health=await (await bridgeFetch('/health',token)).json() as {version?:unknown;auth?:unknown};if(health.version!==1 || health.auth!=='chatgpt')throw new Error('El servicio no usa el contrato o la autenticación esperados.');sessionStorage.setItem('balloon.bridge.token',token);setConnected(true);setNotice('Servicio local conectado con tu sesión de ChatGPT.');}catch(e:any){setConnected(false);setError('No se pudo conectar. Inicia el servicio local, revisa el código y permite el acceso a la red local si tu navegador lo solicita. '+e.message);}finally{setConnecting(false);}}
+ async function connect(){setConnecting(true);setError('');try{const health=await (await bridgeFetch('/health',token)).json() as {version?:unknown;auth?:unknown;features?:unknown};if(health.version!==1 || health.auth!=='chatgpt')throw new Error('El servicio no usa el contrato o la autenticación esperados.');sessionStorage.setItem('balloon.bridge.token',token);setProgressSupported(Array.isArray(health.features)&&health.features.includes('job-progress'));setConnected(true);setNotice('Servicio local conectado con tu sesión de ChatGPT.');}catch(e:any){setConnected(false);setError('No se pudo conectar. Inicia el servicio local, revisa el código y permite el acceso a la red local si tu navegador lo solicita. '+e.message);}finally{setConnecting(false);}}
  async function start(){
   setWorking(true);setError('');setNotice('');
   try{
@@ -81,6 +83,7 @@ export default function AuditPanel({project,disabled,getPackage,onAudit,onLocate
   <div className="audit-setup">
    <div className="audit-title"><div><h1>Interpretación y auditoría</h1><p>Recortes originales, resultado del agente y revisión humana.</p></div><span className={'bridge-status '+(connected?'connected':'')}>{connected?'Conectado · ChatGPT':'Servicio local desconectado'}</span></div>
    <details className="audit-run-setup" open={!audit||activeJob}><summary>Configuración del agente y unidades de trabajo</summary><details className="bridge-setup" open={!connected}><summary>Conexión con Balloon Expert local</summary><p>En tu ordenador, inicia <code>npm run agent:bridge</code> desde Balloon Studio. Mantén esa terminal abierta y pega su código de conexión.</p><div><label>Código de conexión<input type="password" value={token} onChange={e=>{setToken(e.target.value.trim());setConnected(false);}} autoComplete="off" spellCheck={false} disabled={activeJob}/></label><Button variant="outline" disabled={!token||connecting||activeJob} onClick={connect}><Plug/>{connecting?'Conectando…':'Conectar'}</Button></div><small>Los archivos se envían al servicio de este ordenador. Codex interpreta con tu sesión de ChatGPT y consume su cuota; no se configura una clave de API.</small><p>Si tu navegador bloquea el acceso a la red local desde Vercel, puedes usar <a href={BRIDGE} target="_blank" rel="noopener noreferrer">Balloon Studio local</a>, con el mismo editor y auditoría.</p></details>
+   <AgentProgress job={job} connected={connected} supported={progressSupported} preparing={working}/>
    <div className="audit-job-settings"><label>Unidad principal<select value={unit} onChange={e=>setUnit(e.target.value)} disabled={activeJob}><option value="">Confirmar unidad…</option><option value="mm">Milímetros (mm)</option><option value="in">Pulgadas (in)</option></select></label><label>Tolerancia general<select value={toleranceMode} onChange={e=>setToleranceMode(e.target.value)} disabled={activeJob}><option value="">Confirmar criterio…</option><option value="none">No aplicar tolerancia general</option><option value="drawing">Leer del plano, cuando sea aplicable</option><option value="specified">Usar una tolerancia indicada</option></select></label>{toleranceMode==='specified' && <label>Regla de tolerancia<input value={tolerance} onChange={e=>setTolerance(e.target.value)} maxLength={2000} placeholder="Regla y ámbito de aplicación" disabled={activeJob}/></label>}<Button onClick={start} disabled={!canStart}><Play/>{working?'Preparando…':'Interpretar con agente'}</Button></div>
    </details><div className="audit-transport"><Button variant="outline" onClick={()=>importInput.current?.click()} disabled={!project.id||working||disabled}><Upload/>Cargar ZIP interpretado</Button><input hidden ref={importInput} type="file" accept=".zip,application/zip" onChange={e=>importResult(e.target.files?.[0])}/>{job?.status==='completed' && <Button variant="outline" onClick={downloadResult} disabled={!result.current&&!connected}><Download/>Descargar respuesta del agente</Button>}{audit && <Button onClick={onExport} disabled={disabled||working||stale!==false||!!counts?.pending||!!counts?.flagged||draftDirty}><Download/>Guardar auditoría final</Button>}</div>
    {job && <div className={'audit-job-state '+job.status} role="status"><span>{job.message}</span>{activeJob && <Button size="sm" variant="outline" onClick={cancel}><Square/>Cancelar trabajo</Button>}</div>}

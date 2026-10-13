@@ -1,0 +1,27 @@
+const assert=require('node:assert/strict');
+const {createProgress,eventObserver,jsonLineReader,advance}=require('../scripts/agent-progress.cjs');
+const progress=createProgress(),observe=eventObserver(progress);
+const event=(type,item)=>JSON.stringify({type,item})+'\n';
+const privateText='SECRET-API-KEY private tool output hidden reasoning';
+let observed=0;const reader=jsonLineReader(e=>{if(observe(e))observed++;});
+const stream=event('thread.started')+event('turn.started')+event('item.started',{id:'1',type:'command_execution',command:'read agent/interpret-balloons/SKILL.md',aggregated_output:privateText})+event('item.completed',{id:'1',type:'command_execution',command:'read agent/interpret-balloons/SKILL.md',exit_code:0})+event('item.completed',{id:'2',type:'reasoning',text:privateText});
+const bytes=Buffer.from(stream);
+// Emulate arbitrary stdout boundaries, including within JSON and UTF-8 characters.
+for(let i=0;i<bytes.length;i+=7)reader.write(bytes.subarray(i,i+7));reader.end();
+assert.equal(progress.phase,'reading');assert.equal(progress.completedActions,1);assert.equal(observed,4);
+observe({type:'item.started',item:{id:'3',type:'mcp_tool_call',tool:'js',arguments:{code:'await nodeRepl.emitImage(await fs.readFile("crops/zone-a.png"))'},result:privateText}});
+assert.equal(progress.phase,'interpreting');
+observe({type:'item.completed',item:{id:'3',type:'mcp_tool_call',tool:'js',arguments:{code:'view_image crops/zone-a.png'},status:'completed'}});
+observe({type:'item.completed',item:{id:'3',type:'mcp_tool_call',status:'completed'}});
+assert.equal(progress.completedActions,2);
+observe({type:'item.completed',item:{id:'4',type:'command_execution',command:'read references/source_handling.md',exit_code:1,aggregated_output:privateText}});
+assert.equal(progress.phase,'interpreting');assert.equal(progress.completedActions,2);assert.equal(progress.events.at(-1).level,'warning');
+observe({type:'item.completed',item:{id:'5',type:'agent_message',text:privateText}});
+assert.doesNotMatch(JSON.stringify(progress),/SECRET|private|reasoning|command|zone-a/);
+advance(progress,'validating','Comprobando la cobertura.');advance(progress,'packaging','Preparando ZIP.');advance(progress,'completed','ZIP listo.');
+assert.equal(progress.phase,'completed');
+for(let i=0;i<40;i++)observe({type:'turn.started'});assert.equal(progress.events.length,12);
+const parsed=[];const bounded=jsonLineReader(e=>parsed.push(e));
+bounded.write(Buffer.from('not JSON\n'+ 'x'.repeat(270000)));bounded.write(Buffer.from('\n'+JSON.stringify({type:'turn.started'})+'\n'));bounded.end();
+assert.deepEqual(parsed,[{type:'turn.started'}]);
+console.log('Verificado: actividad real, eventos fragmentados, fases, reintentos, historial limitado y exclusión de comandos, resultados y razonamiento.');

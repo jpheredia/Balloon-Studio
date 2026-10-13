@@ -26,6 +26,30 @@
 .bridge-setup > div { display: flex; align-items: flex-end; gap: 10px; max-width: 650px; }
 .bridge-setup label { flex: 1; }
 .bridge-setup small { display: block; font-size: 11px; color: var(--muted-foreground); margin-top: 10px; line-height: 1.5; }
+.agent-progress { border: 1px solid var(--border); background: #f7f9fa; padding: 12px 14px; border-radius: 4px; margin: 0 0 16px; }
+.agent-progress-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.agent-progress-heading h2 { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; margin: 0; }
+.agent-progress-heading > span { font-size: 11px; color: var(--muted-foreground); }
+.agent-progress-heading .agent-live { display: flex; align-items: center; gap: 5px; color: var(--primary); }
+.agent-live svg { animation: agent-spin 1.5s linear infinite; }
+.agent-phases { display: flex; flex-wrap: wrap; gap: 8px 16px; list-style: none; padding: 0; margin: 12px 0; }
+.agent-phases li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #87919a; }
+.agent-phases li[data-state='done'] { color: #466454; }
+.agent-phases li[data-state='current'] { color: var(--primary); font-weight: 600; }
+.agent-phase-dot { width: 7px; height: 7px; border: 1px solid currentColor; border-radius: 50%; margin: 2px; }
+.agent-phases li[data-state='current'] .agent-phase-dot { background: currentColor; }
+.agent-progress.failed .agent-phases li[data-state='current'], .agent-progress.cancelled .agent-phases li[data-state='current'] { color: #943b32; }
+.agent-progress-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted-foreground); font-size: 11px; margin: 10px 0; }
+.agent-progress-meta strong { font-family: var(--font-data); font-weight: 500; color: var(--foreground); }
+.agent-activity-log { list-style: none; padding: 8px 0 0; margin: 0; border-top: 1px solid var(--border); max-height: 132px; overflow: auto; }
+.agent-activity-log li { display: flex; gap: 12px; font-size: 12px; line-height: 1.7; padding: 2px 0; }
+.agent-activity-log time { flex-shrink: 0; font-family: var(--font-data); color: var(--muted-foreground); font-size: 11px; }
+.agent-activity-log .warning, .agent-progress-warning { color: #943b32; }
+.agent-progress-warning, .agent-progress-idle, .agent-progress-footnote { font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
+.agent-progress-idle, .agent-progress-footnote { color: var(--muted-foreground); }
+.agent-progress-footnote { font-size: 11px; }
+@keyframes agent-spin { to { transform: rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .agent-live svg { animation: none; } }
 .audit-panel label { display: flex; flex-direction: column; gap: 5px; color: #3b4752; font-size: 12px; min-width: 0; }
 .audit-panel input, .audit-panel select, .audit-panel textarea { width: 100%; background: #fff; color: var(--foreground); font-size: 13px; border: 1px solid var(--border); border-radius: 4px; padding: 7px 9px; min-width: 0; }
 .audit-panel input, .audit-panel select { height: 34px; }

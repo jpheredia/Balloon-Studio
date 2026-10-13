@@ -15,7 +15,8 @@ incluida en la cuenta, no es uso ilimitado.
    - `ballooning_classification_visual_reference.pdf`.
    - `GDT_Visual_Reference.pdf`.
    - `Welding_Visual_Reference.pdf`.
-4. Desde Balloon Studio, ejecuta `npm run agent:bridge`. La terminal muestra un
+4. Desde Balloon Studio, ejecuta `npm run agent:bridge`. Compila la app e inicia
+   el servicio. La terminal muestra un
    código nuevo de conexión. Mantén el servicio abierto mientras interpretas.
 5. Abre el despliegue de esta rama, carga un PDF/proyecto y crea los balloons.
 6. En **Auditoría / paso final**, pega el código y pulsa **Conectar**. Si el navegador
@@ -31,6 +32,13 @@ orígenes distintos de la lista permitida. Para usar otra URL de Vercel, configu
 `BALLOON_ALLOWED_ORIGINS` con una lista exacta separada por comas antes de iniciar.
 Los valores predeterminados incluyen el alias de `codex/agent-audit` y las vistas
 previas locales en los puertos 4173 y 5173.
+
+El servicio también sirve la app completa en `http://127.0.0.1:4318`. Puedes abrir
+esa URL y usar el mismo código de conexión si el navegador integrado o la política
+del navegador impiden conectar desde Vercel. Esta ruta conserva el flujo automático;
+no necesita otro servidor ni un intercambio manual de archivos. En la web de Vercel,
+los navegadores que lo requieren deben conceder el permiso de acceso a la red local.
+[Chrome documenta este permiso](https://developer.chrome.com/blog/local-network-access).
 
 `BALLOON_AGENT_DIR` permite otra carpeta de conocimientos; `BALLOON_CODEX_BIN`
 permite indicar la ruta del ejecutable instalado. No se carga el YAML de Copilot

@@ -120,6 +120,7 @@ async function startBridge(options={}) {
   const token=options.token ?? randomBytes(32).toString('hex');
   const codex=options.codex ?? process.env.BALLOON_CODEX_BIN ?? 'codex';
   const origins=new Set(options.origins ?? (process.env.BALLOON_ALLOWED_ORIGINS ?? 'http://127.0.0.1:4173,http://localhost:4173,http://127.0.0.1:5173,http://localhost:5173,https://balloon-studio-git-codex-agent-audit-jps-projects-7afdaa84.vercel.app').split(',').map(s=>s.trim()));
+  origins.add(`http://127.0.0.1:${port}`);origins.add(`http://localhost:${port}`);
   const auth=spawnSync(codex,['login','status'],{encoding:'utf8',env:cleanEnvironment(),windowsHide:true});
   if(auth.status!==0 || !/Logged in using ChatGPT/.test((auth.stdout??'')+(auth.stderr??'')))throw new Error('Inicia sesión con ChatGPT mediante codex login. Este servicio no acepta claves de API.');
   await fs.access(path.join(agentDir,'interpret-balloons.zip'));
@@ -172,9 +173,21 @@ async function startBridge(options={}) {
     res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');
     res.setHeader('Access-Control-Allow-Private-Network','true');
     if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
+    const pathname=new URL(req.url,'http://localhost').pathname;
+    // Serve the same compiled UI from loopback as a usable alternative when a
+    // browser cannot grant a public Vercel page access to local services.
+    let asset;
+    try{asset=pathname==='/'?'index.html':decodeURIComponent(pathname).replace(/^\//,'');}catch{json(res,400,{error:'Ruta no válida.'});return;}
+    if(req.method==='GET' && /^(index\.html|favicon\.svg|pdf\.worker\.min\.mjs|(?:assets|cmaps|standard_fonts|wasm)\/[^\0\\]+)$/.test(asset)){
+      try{
+        const bytes=await fs.readFile(safePath(path.join(ROOT,'dist','static'),asset));
+        const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript','.mjs':'application/javascript','.css':'text/css','.svg':'image/svg+xml','.wasm':'application/wasm','.png':'image/png','.woff2':'font/woff2'}[path.extname(asset)]??'application/octet-stream';
+        res.writeHead(200,{'Content-Type':mime,'Cache-Control':'no-store'});res.end(bytes);
+      }catch{json(res,404,{error:'Compila la app con npm run build:static antes de abrirla localmente.'});}
+      return;
+    }
     const supplied=Buffer.from(req.headers.authorization?.replace(/^Bearer /,'')??''), expected=Buffer.from(token);
     if(supplied.length!==expected.length || !timingSafeEqual(supplied,expected)){json(res,401,{error:'Código de conexión no válido.'});return;}
-    const pathname=new URL(req.url,'http://localhost').pathname;
     try {
       if(req.method==='GET' && pathname==='/health'){json(res,200,{version:1,auth:'chatgpt',activeJob:active});return;}
       if(req.method==='POST' && pathname==='/jobs') {
@@ -211,7 +224,7 @@ async function startBridge(options={}) {
 module.exports={prepareJob,assembleResultZip,startBridge};
 if(require.main===module){
   startBridge().then(({port,token,origins,server})=>{
-    console.log(`Balloon Expert local · http://127.0.0.1:${port}\nAutenticación: sesión de ChatGPT de Codex. No se usan claves de API.\nCódigo de conexión (solo para esta sesión): ${token}\nOrígenes autorizados:\n${[...origins].join('\n')}\nMantén esta terminal abierta mientras interpretas. Los trabajos se guardan en .balloon-agent/jobs.`);
+    console.log(`Balloon Expert local · http://127.0.0.1:${port}\nPuedes abrir la app completa en esa URL o conectar la web de Vercel.\nAutenticación: sesión de ChatGPT de Codex. No se usan claves de API.\nCódigo de conexión (solo para esta sesión): ${token}\nOrígenes autorizados:\n${[...origins].join('\n')}\nMantén esta terminal abierta mientras interpretas. Los trabajos se guardan en .balloon-agent/jobs.`);
     for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(()=>process.exit(0)));
   }).catch(error=>{console.error(error.message);process.exitCode=1;});
 }

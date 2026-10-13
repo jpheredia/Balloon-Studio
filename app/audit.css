@@ -22,6 +22,7 @@
 .bridge-setup summary { font-size: 13px; font-weight: 600; cursor: pointer; }
 .bridge-setup p { font-size: 12px; color: var(--muted-foreground); line-height: 1.6; margin: 8px 0; }
 .bridge-setup code { font-family: var(--font-data); font-size: 12px; color: #3b4752; }
+.bridge-setup a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
 .bridge-setup > div { display: flex; align-items: flex-end; gap: 10px; max-width: 650px; }
 .bridge-setup label { flex: 1; }
 .bridge-setup small { display: block; font-size: 11px; color: var(--muted-foreground); margin-top: 10px; line-height: 1.5; }
